@@ -3,7 +3,6 @@ package com.memverse.www.memverse.MemverseInterface;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
-import android.util.Log;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -14,6 +13,7 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
 import java.net.URLEncoder;
@@ -27,6 +27,12 @@ import javax.net.ssl.HttpsURLConnection;
 /**
  * Created by Joshua on 12/20/17.
  * This is a class for interacting with the Memverse API. It is used by MemverseInterface.Memverse.
+ *
+ * Error types:
+ *  input error -- a parameter passed to a function was invalid
+ *  authorization error -- user must log in to perform the attempted action
+ *  response error -- the response from a server is malformed/unexpected
+ *  network error --  something went wrong while attempting to connect to a server
  */
 
 class MemverseWebInterface {
@@ -38,15 +44,21 @@ class MemverseWebInterface {
     private static String auth_token="";
 
     /**
-     * Attempt to get an authentication token from the Memverse API. Pass true to the callback if
-     * the log in is successful and false otherwise.
+     * Attempt to get an authentication token from the Memverse API. Call success_callback if the
+     * authentication was successful. Otherwise, pass the error type to error_callback (see class
+     * description for a list of possible error types).
      * @param input_email the email address of the user who is trying to log in
      * @param input_password the password of the user who is trying to log in
-     * @param callback a callback to which will be passed true if the log in is successful and
-     *                 false otherwise
+     * @param success_callback a callback to which will be passed true if the log in was successful
+     *                         or false if the connection was successful but the password and/or
+     *                         username were incorrect
+     * @param error_callback a callback to which will be passed the error type if an error (other
+     *                       than a username/password error) occurred (see class description for
+     *                       a list of possible error types)
      */
     void authenticate(String input_email, String input_password,
-                             final MemverseCallback<Boolean> callback) {
+                      final MemverseCallback<Boolean> success_callback,
+                      final MemverseCallback<String> error_callback) {
         // These are the parameters that will be passed to the authentication API
         Map<String, String> post_data = new HashMap<>();
         // This log in will use the user's username and password
@@ -64,35 +76,75 @@ class MemverseWebInterface {
         api_call("oauth/token", post_data, "POST", new MemverseCallback<JSONObject>() {
             @Override
             public void call(JSONObject response) {
-                if (response.has("access_token")) {
+                try {
+                    auth_token=response.getString("access_token");
+                    success_callback.call(true); // authentication was successful
+                } catch (JSONException e1) {
+                    // The response doesn't contain an access token (possibly because of an error)
                     try {
-                        auth_token=response.getString("access_token");
-                        callback.call(true);
-                    } catch (JSONException e) {
-                        // The response is incorrectly formatted
-                        callback.call(false);
+                        // Attempt to get the error message
+                        if (response.getString("error").equals("Invalid email or " +
+                                "password.")) {
+                            // The username and/or password given by the user is incorrect
+                            success_callback.call(false);
+                        } else {
+                            // Some other error occurred.
+                            error_callback.call("response error");
+                        }
+                    } catch (JSONException e2) {
+                        // The response from the server is malformed/unexpected
+                        error_callback.call("response error");
                     }
                 }
-                // Log in was unsuccessful
-                else callback.call(false);
             }
-        });
+        }, error_callback);
     }
 
+    /**
+     * Set the auth_token to "" (this should be called on log out).
+     */
     void resetAuthToken() {
         auth_token="";
     }
 
-    void getMemoryVerses(final MemverseCallback<JSONArray> callback, String sort_order) {
-        getMemoryVerses(callback, new JSONArray(), sort_order, 1);
+    /**
+     * Attempt to pass a list of the all the current user's memory verses to success_callback sorted
+     * in the order specified by sort_order. If an error occurs, pass the error type to
+     * error_callback instead.
+     * @param sort_order the order in which to sort the verses (see Memverse API documentation
+     *                   for possible values of this parameter).
+     * @param success_callback the callback to which to pass the user's memory verses
+     * @param error_callback the callback to which to pass the error type if there is an error (see
+     *                       class description for possible error types).
+     */
+    void getMemoryVerses(String sort_order, final MemverseCallback<JSONArray> success_callback,
+                         final MemverseCallback<String> error_callback) {
+        // Since the Memverse API only returns a maximum of 100 verses at a time, call the recursive
+        // version of getMemoryVerses starting with the first 100 verses (page_num=1)
+        getMemoryVerses(sort_order, success_callback, error_callback, new JSONArray(), 1);
     }
 
-    void getMemoryVerses(final MemverseCallback<JSONArray> callback,
-                                 final JSONArray prev_verses, final String sort_order,
-                                 final Integer page_num) {
-        // These are the parameters that will be passed to the authentication API
+    /**
+     * Recursively retrieve each page of memory verses and pass them all to success_callback on
+     * completion. If an error occurs, pass the error type to error_callback instead. (This function
+     * is used by getMemoryVerses(String, MemverseCallback, MemverseCallback) above.)
+     * @param sort_order the order in which to sort the verses
+     * @param success_callback the callback to which to pass the user's memory verses
+     * @param error_callback the callback to which to pass the error type if there is an error.
+     * @param prev_verses a JSONArray of all the memory verses that have been retrieved in previous
+     *                    iterations
+     * @param page_num the page number for the current iteration (each page contains 100 verses max)
+     */
+    private void getMemoryVerses(final String sort_order,
+                                 final MemverseCallback<JSONArray> success_callback,
+                                 final MemverseCallback<String> error_callback,
+                                 final JSONArray prev_verses, final Integer page_num) {
+        // These are the parameters that will be passed to the API
         Map<String, String> data = new HashMap<>();
-        if(!sort_order.equals("verse")) data.put("sort", sort_order);
+        // Memverse sorts verses canonically (by verse reference) by default, so only specify the
+        // sort order if some other order is requested (an error will occur if you set the "sort"
+        // field to "ref")
+        if(!sort_order.equals("ref")) data.put("sort", sort_order);
         data.put("page", page_num.toString());
 
         // Attempt to retrieve verses
@@ -105,32 +157,76 @@ class MemverseWebInterface {
                     for (int i = 0; i < new_verses.length(); i++) {
                         prev_verses.put(new_verses.get(i));
                     }
-                    // If count==100, there are still more verses to retrieve
+                    // If count==100, there may still be more verses to retrieve
                     if (response.getInt("count")==100) {
-                        getMemoryVerses(callback, prev_verses, sort_order, page_num+1);
+                        getMemoryVerses(sort_order, success_callback, error_callback, prev_verses,
+                                page_num+1);
                     } else {
-                        callback.call(prev_verses);
+                        // All the verses have been retrieved and added to the prev_verses array.
+                        // Send them to the callback
+                        success_callback.call(prev_verses);
                     }
                 } catch (JSONException e) {
                     // The response was not correctly formatted, possibly due to an
                     // authentication error
-                    callback.call(null);
+                    error_callback.call("response error");
                 }
             }
-        });
+        }, error_callback);
     }
 
-    void rateVerse(String verse_id, String rating) {
+    /**
+     * Attempt to record a rating for a verse.
+     * @param verse_id the Memverse id of the verse to be rated
+     * @param rating a number between 1 and 5 (inclusive) representing the rating to be recorded
+     * @param success_callback the callback to be called upon success and to which to pass true if
+     *                         the verse has been memorized and false if it hasn't
+     * @param error_callback the callback to which to pass the error type if an error occurs (see
+     *                       the class description for a list of possible error types)
+     */
+    void rateVerse(String verse_id, String rating,
+                   final MemverseCallback<Boolean> success_callback,
+                   final MemverseCallback<String> error_callback) {
+        // These are the parameters that will be passed to the API
         Map<String, String> data = new HashMap<>();
         data.put("id", verse_id);
         data.put("q", rating);
 
         api_call("1/memverses/" + verse_id, data, "PUT", new MemverseCallback<JSONObject>() {
             @Override
-            public void call(JSONObject input) {
-                //TODO: Handle errors
+            public void call(JSONObject response) {
+                try {
+                    success_callback.call(response.getJSONObject("response")
+                            .getString("status").equals("Memorized"));
+                } catch (JSONException e) {
+                    // The response was malformed/unexpected (maybe the verse id was incorrect)
+                    error_callback.call("response error");
+                }
             }
-        });
+        }, error_callback);
+    }
+
+    /**
+     * Return information about the current user in a JSONObject (see the Memverse API for the form
+     * of this JSONObject).
+     * @param success_callback the callback to which to pass a JSONObject with information about the
+     *                         current user on success
+     * @param error_callback the callback to which to pass the error type if an error occurs (see
+     *                       the class description for a list of possible error types)
+     */
+    void getCurentUser(final MemverseCallback<JSONObject> success_callback,
+                       final MemverseCallback<String> error_callback) {
+        api_call("1/me/", new HashMap<String, String>(), "GET", new MemverseCallback<JSONObject>() {
+            @Override
+            public void call(JSONObject response) {
+                try {
+                    success_callback.call(response.getJSONObject("response"));
+                } catch (JSONException e) {
+                    // The response was malformed/unexpected (maybe no user is logged in)
+                    error_callback.call("response error");
+                }
+            }
+        }, error_callback);
     }
 
     /**
@@ -152,22 +248,24 @@ class MemverseWebInterface {
 
     /**
      * Make a call to the Memverse API and pass the response to the callback function in the form
-     * of a JSON object
+     * of a JSON object. If an error occurs, pass the error type to error_callback instead (see the
+     * class description for a list of possible error types).
      * @param api specifies which part of the API to call (i.e. "oauth/token", "user", "verses/lookup")
      * @param params a list a parameters to pass to the API
      * @param method the method to use when calling the API ("GET", "POST", "DELETE", or "PUT")
-     * @param callback the callback to which a JSONObject representing the API's response will be
-     *                 passed (an empty JSON object will be passed to this callback if there is an
-     *                 error)
+     * @param success_callback the callback to which a JSONObject representing the API's response
+     *                         will be passed if the API call is successful
+     * @param error_callback the callback to which the error type will be passed if an error occurs
      */
     private void api_call(String api, Map<String, String> params, String method,
-                          final MemverseCallback<JSONObject> callback) {
-        (new LoadJSONTask("https://www.memverse.com/"+api, params, method,
-                callback)).execute((Void) null);
+                          final MemverseCallback<JSONObject> success_callback,
+                          final MemverseCallback<String> error_callback) {
+        (new LoadJSONTask("https://www.memverse.com/"+api, params, method, success_callback,
+                error_callback)).execute((Void) null);
     }
 
     /**
-     * Return a String representing the MD5 hash of the input (used by getGravatar)
+     * @return a String representing the MD5 hash of the input (used by getGravatar)
      */
     private String md5Hash(String input) {
         try {
@@ -200,100 +298,145 @@ class MemverseWebInterface {
         private Map<String, String> params;
         // The method to use when connecting ("GET", "POST", "PUT", etc.)
         private String method;
-        // The callback to notify of the server's response
-        private MemverseCallback<JSONObject> callback;
+        // The callback to notify of the server's response if connection is successful
+        private MemverseCallback<JSONObject> success_callback;
+        // The callback to which to pass the error type if an error occurs (see the class
+        // description for a list of possible error types)
+        private MemverseCallback<String> error_callback;
+        // Stores an error type when needed
+        private String error_type;
 
         /**
          * Initialize the parameters that will be used to make the request
          * @param input_url the URL of the server to connect to
          * @param input_params the parameters to pass to the server
          * @param input_method the method to use when connecting ("GET", "POST", "PUT", etc.)
-         * @param input_callback the callback to notify of the server's response
+         * @param input_success_callback the callback to notify of the server's response
          */
         LoadJSONTask(String input_url, Map<String, String> input_params, String input_method,
-                        MemverseCallback<JSONObject> input_callback) {
+                     MemverseCallback<JSONObject> input_success_callback,
+                     MemverseCallback<String> input_error_callback) {
             url_string = input_url;
             params = input_params;
             method = input_method;
-            callback = input_callback;
+            success_callback = input_success_callback;
+            error_callback = input_error_callback;
         }
 
         /**
-         * Send the request to the server and retrieve the response
+         * Send the request to the server and retrieve the response. If an error occurs, return null.
          * @param ignored No parameters are used
-         * @return
+         * @return the server's response or null if an error occurs
          */
         @Override
         protected JSONObject doInBackground(Void... ignored) {
             try {
                 URL url;
-                if (method.equals("POST") || method.equals("PUT") || params.isEmpty())
+                // When making a POST or PUT request, the parameters will be sent later
+                if (params.isEmpty() || method.equals("POST") || method.equals("PUT"))
                     url = new URL(url_string);
+                // When making a GET request, attach the parameters to the URL
                 else
                     url = new URL(url_string+"?"+formatAPIParams(params));
+                // Open a connection to the server
                 HttpsURLConnection urlConnection = (HttpsURLConnection) url.openConnection();
+                // Attempt to send any parameters and retrieve a response
                 try {
+                    // Set the request method (GET, POST, PUT, or DELETE)
                     urlConnection.setRequestMethod(method);
 
-                    // Send authorization token if given
-                    if (!auth_token.equals("")) {
+                    // Tell the server to respond with JSON (www.memverse.com will sometimes return
+                    // HTML for certain API request if this is not specified)
+                    urlConnection.setRequestProperty("Accept", "application/json");
+
+                    // If we have an authorization token, send it in the header
+                    if (!auth_token.equals("") && url.getHost().equals("www.memverse.com")) {
                         urlConnection.setRequestProperty("Authorization", "Bearer "+auth_token);
                     }
 
-                    // Send any parameters
+                    // Send parameters for POST and PUT requests
                     if (!params.isEmpty() && (method.equals("POST") || method.equals("PUT"))) {
                         // Allow output so that parameters can be sent
                         urlConnection.setDoOutput(true);
                         urlConnection.setChunkedStreamingMode(0);
 
+                        // Create an output stream and send the parameters
                         BufferedOutputStream out = new BufferedOutputStream(urlConnection.getOutputStream());
                         out.write(formatAPIParams(params).getBytes());
                         out.flush();
                         out.close();
                     }
 
-                    // Retrieves response
+                    // Retrieves response string
                     BufferedInputStream in = new BufferedInputStream(urlConnection.getInputStream());
                     java.util.Scanner scanner = new java.util.Scanner(in, "UTF-8").useDelimiter("\\A");
                     String response_string = scanner.hasNext() ? scanner.next() : "";
                     scanner.close();
                     in.close();
 
+                    // Convert the response string to a JSONObject and return it
                     return new JSONObject(response_string);
 
                 } catch (JSONException e) {
-                    e.printStackTrace();
+                    // The response string could not be converted to a JSONObject
+                    error_type="response error";
                 } catch (ProtocolException e) {
                     // Something went wrong with setRequestMethod
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    // Something went wrong with the BufferedOutputStream
-                    e.printStackTrace();
+                    error_type="network error";
+                } catch (IOException e1) {
+                    // Something went wrong with the output or input stream. Attempt to retrieve the
+                    // error stream
+                    try {
+                        BufferedInputStream err_in =
+                                new BufferedInputStream(urlConnection.getErrorStream());
+                        java.util.Scanner err_scanner =
+                                new java.util.Scanner(err_in, "UTF-8").useDelimiter("\\A");
+                        String error_string = err_scanner.hasNext() ? err_scanner.next() : "";
+                        err_scanner.close();
+                        err_in.close();
+
+                        // Convert the response string to a JSONObject and return it
+                        return new JSONObject(error_string);
+                    } catch (IOException e2) {
+                        // Could not read error stream
+                        error_type="network error";
+                    } catch (JSONException e2) {
+                        // Could not convert the error stream to JSON
+                        error_type="network error";
+                    }
                 } finally {
                     urlConnection.disconnect();
                 }
+            } catch (MalformedURLException e) {
+                // The url was malformed
+                error_type="input error";
             } catch (IOException e) {
-                // Something went wrong with the openConnection or URL creation
-                e.printStackTrace();
+                // Something went wrong with url.openConnection
+                error_type="network error";
             }
-            return new JSONObject();
-        }
-
-        @Override
-        protected void onPostExecute(final JSONObject response) {
-            callback.call(response);
-        }
-
-        @Override
-        protected void onCancelled() {
-            callback.call(new JSONObject());
+            // null will only be returned if an error occurred
+            return null;
         }
 
         /**
-         * Convert a map of key-value pairs to a string for use in POST and GET requests (e.g
-         * {"a": "1", "b": "2"} -> "a=1&b=2"). If there is an error, return an empty String.
-         * @param params Map with variable names as keys pointing to each variable's corresponding value
-         * @return a string properly formatted for POST and GET requests
+         * Pass the server's response to the success callback unless an error occurred. If an error
+         * occurs, pass the error type to the error callback (see class description for a list of
+         * error types).
+         * @param response the server's response (or null if an error occurred)
+         */
+        @Override
+        protected void onPostExecute(final JSONObject response) {
+            if(response!=null) success_callback.call(response);
+            else error_callback.call(error_type);
+        }
+
+        /**
+         * Convert a map of key-value pairs to a string for use in GET, POST, PUT, and DELETE
+         * requests (e.g {"a": "1", "b": "2"} -> "a=1&b=2"). If there is an error, return an empty
+         * String.
+         * @param params Map with paramater names as keys pointing to each paramater's corresponding
+         *               value
+         * @return a string properly formatted for GET, POST, PUT, and DELETE requests
          */
         private String formatAPIParams(Map<String, String> params) {
             StringBuilder paramsString = new StringBuilder();
@@ -306,7 +449,7 @@ class MemverseWebInterface {
                 paramsString.deleteCharAt(0);
                 return paramsString.toString();
             } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();
+                // Something went wrong with URLEncoder
                 return "";
             }
         }
@@ -315,39 +458,47 @@ class MemverseWebInterface {
     /**
      * A thread for loading image data from the internet
      */
-    public class LoadImageTask extends AsyncTask<Void, Void, Bitmap> {
+    public static class LoadImageTask extends AsyncTask<Void, Void, Bitmap> {
 
         private String url="";
         private Bitmap image;
         MemverseCallback<Bitmap> callback;
 
+        /**
+         * Initialize the parameters that will be used to make the request
+         * @param input_url the url at which the image is located
+         * @param input_callback the callback to which to pass the image when it is loaded (or null
+         *                       if an error occurs)
+         */
         LoadImageTask(String input_url, MemverseCallback<Bitmap> input_callback) {
             url = input_url;
             callback = input_callback;
         }
 
+        /**
+         * Send the request to the server and return the image. If an error occurs, return null
+         * @param ignored No parameters are used
+         * @return the requested image or null if an error occurs
+         */
         @Override
-        protected Bitmap doInBackground(Void... params) {
+        protected Bitmap doInBackground(Void... ignored) {
             try {
                 InputStream image_stream = (InputStream) new URL(url).getContent();
                 image = BitmapFactory.decodeStream(image_stream);
                 image_stream.close();
                 return image;
+            } catch (Exception e) {
+                return null;
             }
-            catch (Exception e) {
-                e.printStackTrace();
-            }
-            return null;
         }
 
+        /**
+         * Pass the image (or null if an error occurred) to the callback.
+         * @param image the image (or null if an error occurred)
+         */
         @Override
         protected void onPostExecute(final Bitmap image) {
             callback.call(image);
-        }
-
-        @Override
-        protected void onCancelled() {
-            callback.call(null);
         }
     }
 }

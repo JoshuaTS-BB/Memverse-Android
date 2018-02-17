@@ -1,22 +1,13 @@
 package com.memverse.www.memverse;
 
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
-import android.annotation.TargetApi;
-import android.os.AsyncTask;
-
-import android.os.Build;
 import android.os.Bundle;
-import android.support.design.widget.NavigationView;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.inputmethod.EditorInfo;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
@@ -25,120 +16,94 @@ import com.memverse.www.memverse.MemverseInterface.MemverseCallback;
 import java.util.List;
 
 /**
- * A login screen that offers login via email/password.
+ * Allow users to log into their Memverse accounts
  */
 public class LoginActivity extends NavigationActivity {
-    private static final String TAG = LoginActivity.class.getSimpleName();
-
-    // UI references.
-    private AutoCompleteTextView mEmailView;
-    private EditText mPasswordView;
-    private View mProgressView;
-    private View mLoginFormView;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setupNavigationActivity(R.layout.activity_login);
 
-        // Set up the login form.
-        mEmailView = (AutoCompleteTextView) findViewById(R.id.email);
+        // Listen for input events that signal that the user is ready to submit the form (e.g.
+        // pressing the enter button)
+        ((EditText) findViewById(R.id.login_passwordInput)).setOnEditorActionListener(
+                new TextView.OnEditorActionListener() {
+                    @Override
+                    public boolean onEditorAction(TextView textView, int id, KeyEvent keyEvent) {
+                        if (id == EditorInfo.IME_ACTION_DONE || id == EditorInfo.IME_NULL) {
+                            attemptLogin();
+                            return true;
+                        }
+                        return false;
+                    }
+                });
 
-        mPasswordView = (EditText) findViewById(R.id.password);
-        mPasswordView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView textView, int id, KeyEvent keyEvent) {
-                if (id == EditorInfo.IME_ACTION_DONE || id == EditorInfo.IME_NULL) {
-                    attemptLogin();
-                    return true;
-                }
-                return false;
-            }
-        });
-
-        Button mEmailSignInButton = (Button) findViewById(R.id.email_sign_in_button);
-        mEmailSignInButton.setOnClickListener(new OnClickListener() {
+        // Listen for clicks on the sign in button
+        findViewById(R.id.login_submitButton).setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
                 attemptLogin();
             }
         });
-
-        mLoginFormView = findViewById(R.id.main_content);
-        mProgressView = findViewById(R.id.progress_spinner);
     }
 
     /**
-     * Attempts to sign in or register the account specified by the login form.
-     * If there are form errors (invalid email, missing fields, etc.), the
-     * errors are presented and no actual login attempt is made.
+     * Attempt to log into the user's Memverse account and display an error message if unsuccessful.
      */
     private void attemptLogin() {
-        // Reset errors.
-        mEmailView.setError(null);
-        mPasswordView.setError(null);
+        AutoCompleteTextView emailView = findViewById(R.id.login_emailInput);
+        final EditText passwordView = findViewById(R.id.login_passwordInput);
 
-        // Store values at the time of the login attempt.
-        String email = mEmailView.getText().toString();
-        String password = mPasswordView.getText().toString();
+        String email = emailView.getText().toString();
+        String password = passwordView.getText().toString();
 
-        boolean cancel = false;
-        View focusView = null;
-
-        // Check for a valid password, if the user entered one.
-        if (TextUtils.isEmpty(password)) {
-            mPasswordView.setError(getString(R.string.error_field_required));
-            focusView = mPasswordView;
-            cancel = true;
-        }
-
-        // Check for a valid email address.
         if (TextUtils.isEmpty(email)) {
-            mEmailView.setError(getString(R.string.error_field_required));
-            focusView = mEmailView;
-            cancel = true;
-        } else if (!isEmailValid(email)) {
-            mEmailView.setError(getString(R.string.error_invalid_email));
-            focusView = mEmailView;
-            cancel = true;
-        }
-
-        if (cancel) {
-            // There was an error; don't attempt login and focus the first
-            // form field with an error.
-            focusView.requestFocus();
+            // The user hasn't entered an email address
+            emailView.setError(getString(R.string.error_field_required));
+            emailView.requestFocus();
+        } else if (TextUtils.isEmpty(password)) {
+            // The user hasn't entered an email address
+            passwordView.setError(getString(R.string.error_field_required));
+            passwordView.requestFocus();
         } else {
-            // Show a progress spinner, and kick off a background task to
-            // perform the user login attempt.
+            // Attempt log in and display a progress spinner while waiting
             showProgress(true);
             memverse.login(email, password, new MemverseCallback<Boolean>() {
                 @Override
                 public void call(Boolean success) {
                     showProgress(false);
                     if (success) {
-                        Log.d(TAG, memverse.getEmail());
+                        // The log in was successful
                         launchActivity(MainActivity.class);
                     } else {
-                        mPasswordView.setError(getString(R.string.error_incorrect_password));
-                        mPasswordView.requestFocus();
+                        // Wrong username/password
+                        showErrorMsg(getString(R.string.error_incorrect_password));
+                        passwordView.requestFocus();
+                    }
+                }
+            }, new MemverseCallback<String>() {
+                @Override
+                public void call(String error_type) {
+                    // An error (other than wrong username/password) occurred (e.g. a network error)
+                    showProgress(false);
+                    if (error_type.equals("network error")) {
+                        showErrorMsg(getString(R.string.error_network));
+                    } else {
+                        showErrorMsg(getString(R.string.error_generic));
                     }
                 }
             });
         }
     }
 
-    private boolean isEmailValid(String email) {
-        //TODO: Update this
-        return email.contains("@");
-    }
-
     private void addEmailsToAutoComplete(List<String> emailAddressCollection) {
+        // TODO: Add autocomplete to log in form
         //Create adapter to tell the AutoCompleteTextView what to show in its dropdown list.
         ArrayAdapter<String> adapter =
                 new ArrayAdapter<>(LoginActivity.this,
                         android.R.layout.simple_dropdown_item_1line, emailAddressCollection);
 
-        mEmailView.setAdapter(adapter);
+        ((AutoCompleteTextView) findViewById(R.id.login_emailInput)).setAdapter(adapter);
     }
 }
 

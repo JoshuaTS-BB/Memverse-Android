@@ -11,10 +11,12 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".MainActivity">
+        <activity
+            android:name=".MainActivity"
+            android:label="@string/title_activity_main">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
+                <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
@@ -22,10 +24,6 @@
             android:name=".LoginActivity"
             android:label="@string/title_activity_login"
             android:parentActivityName=".MainActivity">
-            <intent-filter>
-                <action android:name="android.intent.action.LOGIN" />
-            </intent-filter>
-
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.memverse.www.memverse.MainActivity" />
@@ -33,8 +31,28 @@
         <activity
             android:name=".ViewVersesActivity"
             android:label="@string/title_activity_view_verses"
-            android:theme="@style/AppTheme" />
-        <activity android:name=".ReviewActivity"></activity>
+            android:parentActivityName=".MainActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.memverse.www.memverse.MainActivity" />
+        </activity>
+        <activity
+            android:name=".ReviewActivity"
+            android:label="@string/title_activity_review"
+            android:windowSoftInputMode="adjustResize"
+            android:parentActivityName=".MainActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.memverse.www.memverse.MainActivity" />
+        </activity>
+        <activity
+            android:name=".ReviewCompletedActivity"
+            android:label="@string/title_activity_review_complete"
+            android:parentActivityName=".MainActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.memverse.www.memverse.MainActivity" />
+        </activity>
     </application>
 
 </manifest>
