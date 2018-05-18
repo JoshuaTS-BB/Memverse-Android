@@ -58,6 +58,16 @@
                 android:textColor="@color/colorMainButtonText"
                 android:text="@string/action_view_verses" />
 
+
+            <Button
+                android:id="@+id/main_addVersesButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:background="@color/colorMainButton"
+                android:textColor="@color/colorMainButtonText"
+                android:text="@string/action_add_verses" />
+
             <Button
                 android:id="@+id/main_logoutButton"
                 android:layout_width="match_parent"
@@ -70,5 +80,13 @@
         </LinearLayout>
 
     </LinearLayout>
+
+    <TextView
+        android:id="@+id/privacyPolicyLink"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="32dp"
+        android:layout_marginStart="32dp"
+        android:text="Privacy" />
 
 </LinearLayout>

@@ -82,4 +82,21 @@
 
     </ScrollView>
 
+    <TextView
+        android:id="@+id/createAccountLink"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="32dp"
+        android:layout_marginStart="32dp"
+        android:layout_marginBottom="16dp"
+        android:text="Create Account" />
+
+    <TextView
+        android:id="@+id/privacyPolicyLink"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="32dp"
+        android:layout_marginStart="32dp"
+        android:text="Privacy" />
+
 </LinearLayout>

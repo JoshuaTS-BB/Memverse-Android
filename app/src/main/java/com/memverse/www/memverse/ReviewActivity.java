@@ -1,16 +1,14 @@
 package com.memverse.www.memverse;
 
-import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.SwitchCompat;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.view.Gravity;
 import android.view.View;
-import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 import android.widget.TextView;
 
@@ -42,60 +40,67 @@ public class ReviewActivity extends NavigationActivity {
     // The verse that the user is currently reviewing
     JSONObject current_verse;
     // Set to true if live feedback should be displayed and false otherwise
-    static boolean show_feedback=true;
-    // A popup window containing buttons for users to rate their performance on each verse
-    // (initialized in onCreate)
-    PopupWindow ratePopup;
+    boolean show_feedback=true;
+    // Set to false once the instructions have been hidden
+    boolean instructions_visible=true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setupNavigationActivity(R.layout.activity_review);
 
-        // Create a popup window with buttons for users to rate their performance on each verse
+        /*// Create a popup window with buttons for users to rate their performance on each verse
         ratePopup = new PopupWindow(ReviewActivity.this);
         // The next two lines allow the popup to be dismissed when user touches outside the popup
         // window
         ratePopup.setOutsideTouchable(true);
         ratePopup.setBackgroundDrawable(new ColorDrawable(getResources().getColor(R.color.colorPopupBackground)));
         // Use the rate_verse_popup layout
-        ratePopup.setContentView(getLayoutInflater().inflate(R.layout.rate_verse_popup, null));
-        // Set onclick listeners for the rate buttons in the popup window
-        ratePopup.getContentView().findViewById(R.id.rate1).setOnClickListener(new View.OnClickListener() {
+        ratePopup.setContentView(getLayoutInflater().inflate(R.layout.rate_verse_popup, null));*/
+        // Set onclick listeners for the rate buttons
+        findViewById(R.id.review_rate1).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 rateCurrentVerse(1);
+                findViewById(R.id.review_rateBar).setVisibility(View.GONE);
             }
         });
-        ratePopup.getContentView().findViewById(R.id.rate2).setOnClickListener(new View.OnClickListener() {
+        findViewById(R.id.review_rate2).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 rateCurrentVerse(2);
+                findViewById(R.id.review_rateBar).setVisibility(View.GONE);
             }
         });
-        ratePopup.getContentView().findViewById(R.id.rate3).setOnClickListener(new View.OnClickListener() {
+        findViewById(R.id.review_rate3).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 rateCurrentVerse(3);
+                findViewById(R.id.review_rateBar).setVisibility(View.GONE);
             }
         });
-        ratePopup.getContentView().findViewById(R.id.rate4).setOnClickListener(new View.OnClickListener() {
+        findViewById(R.id.review_rate4).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 rateCurrentVerse(4);
+                findViewById(R.id.review_rateBar).setVisibility(View.GONE);
             }
         });
-        ratePopup.getContentView().findViewById(R.id.rate5).setOnClickListener(new View.OnClickListener() {
+        findViewById(R.id.review_rate5).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 rateCurrentVerse(5);
+                findViewById(R.id.review_rateBar).setVisibility(View.GONE);
             }
         });
 
         findViewById(R.id.review_rateButton).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                ratePopup.showAtLocation(findViewById(R.id.mainContentLayout), Gravity.TOP, 0, 300);
+                //ratePopup.showAtLocation(findViewById(R.id.mainContentLayout), Gravity.TOP, 0, 300);
+                LinearLayout rateBar=findViewById(R.id.review_rateBar);
+                if(rateBar.getVisibility()==View.VISIBLE) rateBar.setVisibility(View.GONE);
+                else rateBar.setVisibility(View.VISIBLE);
             }
         });
 
@@ -158,6 +163,11 @@ public class ReviewActivity extends NavigationActivity {
                         @Override
                         public void afterTextChanged(Editable editable) {
                             if(show_feedback) provideFeedback(editable.toString());
+                            //Hide the instructions if they are currently visible
+                            if(instructions_visible) {
+                                findViewById(R.id.review_instructions).setVisibility(View.GONE);
+                                instructions_visible = false;
+                            }
                         }
                     });
                 } catch (JSONException e) {
@@ -300,9 +310,7 @@ public class ReviewActivity extends NavigationActivity {
             // Memverse API for more information)
             JSONObject v = verse.getJSONObject("verse");
             // Display the verse's reference
-            ((TextView) findViewById(R.id.review_referenceView)).setText(v.getString("book")+" "+
-                    ((Integer) v.getInt("chapter")).toString()+":"+
-                    ((Integer) v.getInt("versenum")).toString());
+            ((TextView) findViewById(R.id.review_referenceView)).setText(memverse.getReference(v));
             // Display the previous verse if given
             TextView prevVerseFeedback = findViewById(R.id.review_prevVerseFeedbackView);
             if (prev_verse!=null) {
@@ -349,8 +357,12 @@ public class ReviewActivity extends NavigationActivity {
             String[] input=essentialize(input_text);
             // A list of the words of the actual text with punctuation and capitalization removed
             String[] actual=essentialize(actual_text);
-            // A list of the words of the actual text including punctuation and capitalization
-            String[] actual_with_punc=actual_text.split(" ");
+            // A list of the words of the actual text (including punctuation and capitalization)
+            // with an extra space at the beginning to separate the text from the verse number. The
+            // regex breaks the string at word boundaries that occur after punctuation/spacing so
+            // that punctuation will always be included with the word that comes next and never with
+            // the word that comes before.
+            String[] actual_with_punc=(" "+actual_text).split("\\b(?=[\\W])");
             // Set to false if the input doesn't match the actual text
             boolean correct=true;
 
@@ -360,27 +372,54 @@ public class ReviewActivity extends NavigationActivity {
             feedback.append(current_verse.getJSONObject("verse").getInt("versenum"));
 
             // Loop through all the words in the input
+            // iact will be used to keep track of the current index in the actual array, whereas
+            // i will be used to keep track of the current index in the input array.
+            int iact=0;
             if(input.length!=0) {
-                for (int i = 0; i < input.length; i++) {
+                for(int i = 0; i < input.length; i++) {
                     try {
-                        if (input[i].equals(actual[i])) {
+                        if(input[i].equals(actual[iact])) {
                             // The input matches the actual text
-                            feedback.append(" ").append(actual_with_punc[i]);
+                            feedback.append(actual_with_punc[iact]);
                         } else {
-                            // If two "words" in a row are only single characters, enter "single
-                            // character mode" and only require the user to type the first
-                            // letter of each word
+                            // If two "words" in a row from the input are only single characters,
+                            // enter "single character mode" and only require the user to type the
+                            // first letter of each word.
                             boolean prev_single=false;
                             boolean next_single=false;
                             if (i>0) prev_single=input[i-1].length()==1;
                             if (i<input.length-1) next_single=input[i+1].length()==1;
                             if(input[i].length()==1 && (prev_single || next_single) &&
-                                    input[i].charAt(0)==actual[i].charAt(0)) {
-                                feedback.append(" ").append(actual_with_punc[i]);
+                                    input[i].charAt(0)==actual[iact].charAt(0)) {
+                                feedback.append(actual_with_punc[iact]);
                             } else {
-                                // The input entered at this point does not match the actual text
-                                feedback.append(" ...");
-                                correct = false;
+                                // If the first two letters of the current input word match the
+                                // first letters of the next two words in the actual text, enter
+                                // "single character mode with no spaces" and only require the user
+                                // to type the first letter of each word without putting spaces in
+                                // between.
+                                if(iact<actual.length-1 && input[i].charAt(0)==actual[iact].charAt(0)
+                                        && input[i].charAt(1)==actual[iact+1].charAt(0)) {
+                                    for(int j = 0; j < input[i].length(); j++) {
+                                        if(input[i].charAt(j)==actual[iact].charAt(0)) {
+                                            feedback.append(actual_with_punc[iact]);
+                                        } else {
+                                            feedback.append(" ...");
+                                            correct = false;
+                                        }
+                                        // Increase iact so that it points to the correct word in
+                                        // the actual text
+                                        iact++;
+                                    }
+                                    // Because iact has already been adjusted, this subtraction is
+                                    // required so that the adjustment of iact at the end of the
+                                    // loop won't throw it off.
+                                    iact--;
+                                } else {
+                                    // The input entered at this point does not match the actual text
+                                    feedback.append(" ...");
+                                    correct = false;
+                                }
                             }
                         }
                     } catch (IndexOutOfBoundsException e) {
@@ -389,19 +428,28 @@ public class ReviewActivity extends NavigationActivity {
                         correct = false;
                         break;
                     }
+                    //Increase iact so that it points to the next word (i is automatically increased
+                    // by the loop)
+                    iact++;
                 }
             }
-            // Check whether the length of the input matches the length of the output (the input may
-            // have been marked correct so far, but it might not include all the words in the actual
-            // text)
-            if (input.length!=actual.length) correct=false;
+            // Check whether the input includes all the words in the actual text
+            if (iact!=actual.length) correct=false;
+
+            // Show the word "Correct" and display ending punctuation if the input matches the
+            // actual verse text
+            if(correct) {
+                feedback.append(actual_with_punc[actual_with_punc.length-1]);
+                findViewById(R.id.review_correctFeedbackView).setVisibility(View.VISIBLE);
+            } else {
+                // Otherwise, make sure "Correct" is hidden
+                findViewById(R.id.review_correctFeedbackView).setVisibility(View.GONE);
+            }
 
             // Show feedback and make sure it's visible
             verseFeedbackView.setText(feedback.toString());
             verseFeedbackView.setVisibility(View.VISIBLE);
 
-            // Show the word "Correct" if the input matches the actual verse text
-            findViewById(R.id.review_correctFeedbackView).setVisibility(correct ? View.VISIBLE : View.GONE);
         } catch (Exception e) {
             // The current_verse JSONObject is not formatted correctly
             showErrorMsg(getString(R.string.error_generic));
@@ -433,7 +481,6 @@ public class ReviewActivity extends NavigationActivity {
                 }
             }
         });
-        ratePopup.dismiss();
         // Display progress spinner until rating process finishes
         showProgress(true);
     }
@@ -445,13 +492,10 @@ public class ReviewActivity extends NavigationActivity {
      */
     @NonNull
     private String[] essentialize(String str) {
-        StringBuilder strBuilder = new StringBuilder();
-        for (int i=0; i<str.length(); i++) {
-            char c = str.charAt(i);
-            if(Character.isLetter(c) || c==' ')
-                strBuilder.append(str.charAt(i));
-        }
-        return strBuilder.toString().toLowerCase().split(" ");
+        // convert everything to lower case; remove beginning whitespaces, ending whitespaces, and
+        // all punctuation except for "-"; and split at the remaining whitespaces
+        return str.toLowerCase().replaceAll("^\\s+|\\s$+|[\\W&&[^\\s-]]+","")
+                .split("\\s++");
     }
 
     /**

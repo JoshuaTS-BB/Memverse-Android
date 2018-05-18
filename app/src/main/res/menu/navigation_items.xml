@@ -16,6 +16,9 @@
             android:id="@+id/view_verses_nav_button"
             android:title="@string/action_view_verses" />
         <item
+            android:id="@+id/add_verses_nav_button"
+            android:title="@string/action_add_verses" />
+        <item
             android:id="@+id/login_nav_button"
             android:title="@string/action_sign_in" />
         <item

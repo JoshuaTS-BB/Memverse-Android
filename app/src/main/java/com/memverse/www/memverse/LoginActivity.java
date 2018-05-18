@@ -5,7 +5,10 @@ import android.content.Intent;
 import android.content.IntentSender;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.text.Html;
 import android.text.TextUtils;
+import android.text.method.LinkMovementMethod;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -48,9 +51,20 @@ public class LoginActivity extends NavigationActivity {
         // title. Therefore, this activity's label has to be manually set back to the login activity
         // title.
         setTitle(R.string.title_activity_login);
-
         super.onCreate(savedInstanceState);
         setupNavigationActivity(R.layout.activity_login);
+
+        // Setup the link to create an account
+        TextView caLink = findViewById(R.id.createAccountLink);
+        caLink.setText(Html.fromHtml("<a href='"+getResources().getString(R.string.create_account_url)+
+                "'>"+getResources().getString(R.string.create_account_name)+"</a>"));
+        caLink.setMovementMethod(LinkMovementMethod.getInstance());
+
+        // Setup the link to the Privacy Policy
+        TextView ppLink = findViewById(R.id.privacyPolicyLink);
+        ppLink.setText(Html.fromHtml("<a href='"+getResources().getString(R.string.privacy_policy_url)+
+                "'>"+getResources().getString(R.string.privacy_policy_name)+"</a>"));
+        ppLink.setMovementMethod(LinkMovementMethod.getInstance());
 
         String do_auto_login = getIntent().getStringExtra(AUTOMATIC_LOGIN);
         if(do_auto_login!=null && do_auto_login.equals("true")) {

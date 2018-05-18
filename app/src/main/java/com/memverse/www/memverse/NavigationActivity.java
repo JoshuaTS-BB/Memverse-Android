@@ -1,10 +1,7 @@
 package com.memverse.www.memverse;
 
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.Snackbar;
 import android.support.v4.view.GravityCompat;
@@ -16,7 +13,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.memverse.www.memverse.MemverseInterface.Memverse;
@@ -80,7 +76,8 @@ public abstract class NavigationActivity extends AppCompatActivity
         // Listen for button presses in the navigation drawer
         ((NavigationView) findViewById(R.id.navigation)).setNavigationItemSelectedListener(this);
 
-        // Hide menu buttons that are not needed
+        /*//This code, if uncommented, would hide the navigation button that navigated to the current
+        // activity
         switch (view_id) {
             case R.layout.activity_main:
                 ((NavigationView) findViewById(R.id.navigation)).getMenu().findItem(R.id.home_nav_button).setVisible(false);
@@ -94,7 +91,11 @@ public abstract class NavigationActivity extends AppCompatActivity
             case R.layout.activity_review:
                 ((NavigationView) findViewById(R.id.navigation)).getMenu().findItem(R.id.review_nav_button).setVisible(false);
                 break;
-        }
+            case R.layout.activity_add_verses:
+                ((NavigationView) findViewById(R.id.navigation)).getMenu().findItem(R.id.add_verses_nav_button).setVisible(false);
+                break;
+        }*/
+        // Hide menu buttons that are not needed
         if (memverse.is_loggedIn()) {
             ((NavigationView) findViewById(R.id.navigation)).getMenu().findItem(R.id.login_nav_button).setVisible(false);
         }
@@ -102,6 +103,7 @@ public abstract class NavigationActivity extends AppCompatActivity
             ((NavigationView) findViewById(R.id.navigation)).getMenu().findItem(R.id.logout_nav_button).setVisible(false);
             ((NavigationView) findViewById(R.id.navigation)).getMenu().findItem(R.id.view_verses_nav_button).setVisible(false);
             ((NavigationView) findViewById(R.id.navigation)).getMenu().findItem(R.id.review_nav_button).setVisible(false);
+            ((NavigationView) findViewById(R.id.navigation)).getMenu().findItem(R.id.add_verses_nav_button).setVisible(false);
         }
 
         // Display user information in navigation drawer
@@ -149,6 +151,9 @@ public abstract class NavigationActivity extends AppCompatActivity
                 break;
             case  R.id.review_nav_button:
                 launchActivity(ReviewActivity.class);
+                break;
+            case  R.id.add_verses_nav_button:
+                launchActivity(AddVersesActivity.class);
                 break;
         }
         // Hide drawer after use
@@ -225,28 +230,8 @@ public abstract class NavigationActivity extends AppCompatActivity
      * @param show true if the progress spinner should be shown and false if it should be hidden
      */
     protected void showProgress(final boolean show) {
-        final View main_content = findViewById(R.id.mainContentLayout);
-        final ProgressBar progressBar = findViewById(R.id.progressSpinner);
-
-        int shortAnimTime = getResources().getInteger(android.R.integer.config_shortAnimTime);
-
-        main_content.setVisibility(show ? View.GONE : View.VISIBLE);
-        main_content.animate().setDuration(shortAnimTime).alpha(show ? 0 : 1).setListener(
-                new AnimatorListenerAdapter() {
-                    @Override
-                    public void onAnimationEnd(Animator animation) {
-                        main_content.setVisibility(show ? View.GONE : View.VISIBLE);
-                    }
-                });
-
-        progressBar.setVisibility(show ? View.VISIBLE : View.GONE);
-        progressBar.animate().setDuration(shortAnimTime).alpha(show ? 1 : 0).setListener(
-                new AnimatorListenerAdapter() {
-                    @Override
-                    public void onAnimationEnd(Animator animation) {
-                        progressBar.setVisibility(show ? View.VISIBLE : View.GONE);
-                    }
-                });
+        findViewById(R.id.mainContentLayout).setVisibility(show ? View.GONE : View.VISIBLE);
+        findViewById(R.id.progressSpinner).setVisibility(show ? View.VISIBLE : View.GONE);
     }
 
     /**

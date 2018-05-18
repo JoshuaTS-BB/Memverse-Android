@@ -5,6 +5,7 @@
     <string name="title_activity_login">Sign In</string>
     <string name="title_activity_view_verses">View Verses</string>
     <string name="title_activity_review">Review Verses</string>
+    <string name="title_activity_add_verses">Add Verses</string>
     <string name="title_activity_review_complete">Review Complete</string>
 
     <string name="action_settings">Settings</string>
@@ -14,6 +15,9 @@
     <string name="action_sign_in_short">Sign in</string>
     <string name="action_sign_out">Sign out</string>
     <string name="action_view_verses">View Your Verses</string>
+    <string name="action_add_verses">Add/Delete Verses</string>
+    <string name="action_add_verse">Add Verse</string>
+    <string name="action_delete_verse">Delete Verse</string>
     <string name="action_review">Review Verses</string>
     <string name="action_rate">Rate</string>
 
@@ -28,6 +32,11 @@
     <string name="not_logged_user_name">You are not logged in</string>
     <string name="not_logged_email"></string>
 
+    <string name="create_account_url">https://www.memverse.com/users/sign_up/</string>
+    <string name="create_account_name">Create Account</string>
+    <string name="privacy_policy_url">https://docs.google.com/document/d/1pmA5ZpioxOgmc0zARvCQlAMyvP8xrKbUlwfDt8qck5s/edit?usp=sharing</string>
+    <string name="privacy_policy_name">Privacy Policy</string>
+
     <string name="prompt_email">Email</string>
     <string name="prompt_password">Password</string>
 
@@ -35,9 +44,17 @@
     <string name="review_feedback_correct">Correct</string>
     <string name="review_completed">You have no more verses to review today!</string>
     <string name="review_show_verse">Peek </string>
+    <string name="review_instructions">Type the given verse below (you may omit punctuation). You
+        may type entire words, or just the first letter of each word. In first-letter mode, you may
+        omit spaces, but you must type at least two words before feedback will display. When
+        finished, press the "Rate" button to rate how well you remembered the verse on a scale
+        from one to five.</string>
 
     <string name="view_verses_reference_header">Verse</string>
     <string name="view_verses_status_header">Status</string>
     <string name="view_verses_next_test_header">Next Test</string>
     <string name="view_verses_interval_header">Interval</string>
+
+    <string name="add_verses_verse_list_filler">Search for verses above</string>
+    <string name="add_verses_verse_list_error">Verses could not be loaded</string>
 </resources>

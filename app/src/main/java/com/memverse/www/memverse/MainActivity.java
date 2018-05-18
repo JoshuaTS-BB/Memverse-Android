@@ -1,12 +1,16 @@
 package com.memverse.www.memverse;
 
 import android.os.Bundle;
+import android.text.Html;
+import android.text.method.LinkMovementMethod;
 import android.view.View;
+import android.widget.TextView;
 
 import java.util.HashMap;
 import java.util.Map;
 
-// TODO: Keep from going to forbidden screens after a logout
+import static android.text.Html.FROM_HTML_MODE_LEGACY;
+
 public class MainActivity extends NavigationActivity {
 
     @Override
@@ -23,6 +27,12 @@ public class MainActivity extends NavigationActivity {
 
         // Otherwise, setup the home page
         setupNavigationActivity(R.layout.activity_main);
+
+        // Setup the link to the Privacy Policy
+        TextView ppLink = findViewById(R.id.privacyPolicyLink);
+        ppLink.setText(Html.fromHtml("<a href='"+getResources().getString(R.string.privacy_policy_url)+
+                "'>"+getResources().getString(R.string.privacy_policy_name)+"</a>"));
+        ppLink.setMovementMethod(LinkMovementMethod.getInstance());
 
         if(memverse.is_loggedIn()) {
             findViewById(R.id.main_loggedOutButtonsLayout).setVisibility(View.GONE);
@@ -46,6 +56,12 @@ public class MainActivity extends NavigationActivity {
             @Override
             public void onClick(View view) {
                 launchActivity(ViewVersesActivity.class);
+            }
+        });
+        findViewById(R.id.main_addVersesButton).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                launchActivity(AddVersesActivity.class);
             }
         });
         findViewById(R.id.main_logoutButton).setOnClickListener(new View.OnClickListener() {
