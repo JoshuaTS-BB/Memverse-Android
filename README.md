@@ -19,6 +19,9 @@ This is an Android app that uses the Memverse API from www.memverse.com to help 
 ## How to Contribute
 Let me know if you'd like to help! When you're writing code, please look at the code and comments I've already written and try to format your code and comments the same way. I'd like to try to keep the style consistent throughout the project. I'd also like to keep the code well documented, so please include plenty of comments! The task list above shows the main tasks I'd like to focus on in the near future, but you're welcome to work on your own tasks.
 
+## Publication Status
+I'm waiting to hear back from Memverse administrators before I release the app on the Play Store.
+
 ## Screenshots
 ![Rating a review](/screenshots/Review_Rate.png)
 ![Reviewing with single characters](/screenshots/Review_Single_Characters.png)
