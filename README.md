@@ -5,7 +5,7 @@ This is an Android app that uses the Memverse API from www.memverse.com to help 
 ## Task List
 ### Account
 - [x] Allow users to log in to their Memverse account
-- [ ] Remember users' password so that they don't have to log in every time
+- [X] Remember users' password so that they don't have to log in every time
 ### Review
 - [x] Allow users to review any verses that are due for review
 - [x] Allows users to use full words, first letters, or voice input while reviewing
