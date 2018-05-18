@@ -3,6 +3,7 @@ package com.memverse.www.memverse;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.Snackbar;
@@ -20,6 +21,11 @@ import android.widget.TextView;
 
 import com.memverse.www.memverse.MemverseInterface.Memverse;
 import com.memverse.www.memverse.MemverseInterface.MemverseCallback;
+
+import org.w3c.dom.Text;
+
+import java.util.Iterator;
+import java.util.Map;
 
 /**
  * Created by Joshua Swaim on 12/14/17.
@@ -40,6 +46,22 @@ public abstract class NavigationActivity extends AppCompatActivity
         setContentView(R.layout.main);
 
         getLayoutInflater().inflate(view_id, (LinearLayout) findViewById(R.id.content));
+
+        // Displays the activity's title
+        TextView subheading = findViewById(R.id.subheading);
+        if(view_id==R.layout.activity_main) {
+            // The "Main" activity is the launch activity, so its label has to be set to the App's
+            // name. Therefore, the subheading on this page must be manually set.
+            subheading.setText(getResources().getString(R.string.title_activity_main));
+        } else {
+            // Otherwise, attempt to retrieve and display the activity's label
+            try {
+                subheading.setText(getResources().getString(
+                        getPackageManager().getActivityInfo(getComponentName(), 0).labelRes));
+            } catch (PackageManager.NameNotFoundException e) {
+                subheading.setText(getResources().getString(R.string.title_activity_default));
+            }
+        }
 
         // Set up an action bar
         Toolbar toolbar = findViewById(R.id.toolbar);
@@ -120,8 +142,7 @@ public abstract class NavigationActivity extends AppCompatActivity
                 launchActivity(LoginActivity.class);
                 break;
             case  R.id.logout_nav_button:
-                memverse.logout();
-                launchActivity(MainActivity.class);
+                logout();
                 break;
             case  R.id.view_verses_nav_button:
                 launchActivity(ViewVersesActivity.class);
@@ -155,7 +176,47 @@ public abstract class NavigationActivity extends AppCompatActivity
      * @param activity the new activity to start
      */
     protected void launchActivity(Class activity) {
-        startActivity(new Intent(this, activity));
+        Intent intent = new Intent(this, activity);
+        // Let the new activity know which activity launched it
+        intent.putExtra("LAUNCHING_ACTIVITY", this.getClass().getSimpleName());
+        // Start the new activity
+        startActivity(intent);
+    }
+
+    /**
+     * Prepare to switch to a new activity and pass it the parameters contained in data
+     * @param activity the new activity to start
+     * @param data a Map of data to be passed to the new activity in the Intent
+     */
+    protected void launchActivity(Class activity, Map<String, String> data) {
+        Intent intent = new Intent(this, activity);
+        // Add all the information from data to the Intent so that the new activity can access it
+        Iterator i = data.entrySet().iterator();
+        while(i.hasNext()) {
+            Map.Entry<String, String> entry = (Map.Entry<String, String>)i.next();
+            intent.putExtra(entry.getKey(), entry.getValue());
+            i.remove();
+        }
+        // Let the new activity know which activity launched it
+        intent.putExtra("LAUNCHING_ACTIVITY", this.getClass().getSimpleName());
+        // Start the new activity
+        startActivity(intent);
+    }
+
+    /**
+     * Log out of Memverse.com, go to the home page, and erase previous activities from the back
+     * stack so that the user can't navigate back to them.
+     */
+    protected void logout() {
+        // Log out of Memverse.com
+        memverse.logout();
+        Intent intent = new Intent(this, MainActivity.class);
+        // Let the new activity know which activity launched it
+        intent.putExtra("LAUNCHING_ACTIVITY", this.getClass().getSimpleName());
+        // Erase the stack
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+        // Start the new activity
+        startActivity(intent);
     }
 
     /**

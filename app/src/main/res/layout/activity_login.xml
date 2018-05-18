@@ -12,13 +12,13 @@
         style="?android:attr/progressBarStyleLarge"
         android:layout_width="83dp"
         android:layout_height="112dp"
-        android:layout_gravity="center"
-        android:visibility="gone" />
+        android:layout_gravity="center" />
 
     <ScrollView
         android:id="@+id/mainContentLayout"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:visibility="gone">
 
         <LinearLayout
             android:id="@+id/login_allowScrollToBottomMargin"
