@@ -6,7 +6,7 @@ This is an Android app that uses the Memverse API from www.memverse.com to help 
 ### Account
 - [x] Allow users to log in to their Memverse account
 - [X] Remember users' password so that they don't have to log in every time
-- [] Allow users to create new accounts from the app
+- [ ] Allow users to create new accounts from the app
 ### Review
 - [x] Allow users to review any verses that are due for review
 - [x] Allows users to use full words, first letters, or voice input while reviewing
