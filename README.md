@@ -5,7 +5,8 @@ This is an Android app that uses the Memverse API from www.memverse.com to help 
 ## Task List
 ### Account
 - [x] Allow users to log in to their Memverse account
-- [ ] Remember users' password so that they don't have to log in every time
+- [X] Remember users' password so that they don't have to log in every time
+- [ ] Allow users to create new accounts from the app
 ### Review
 - [x] Allow users to review any verses that are due for review
 - [x] Allows users to use full words, first letters, or voice input while reviewing
@@ -20,7 +21,7 @@ This is an Android app that uses the Memverse API from www.memverse.com to help 
 Let me know if you'd like to help! When you're writing code, please look at the code and comments I've already written and try to format your code and comments the same way. I'd like to try to keep the style consistent throughout the project. I'd also like to keep the code well documented, so please include plenty of comments! The task list above shows the main tasks I'd like to focus on in the near future, but you're welcome to work on your own tasks.
 
 ## Publication Status
-I'm waiting to hear back from Memverse administrators before I release the app on the Play Store.
+The app is now available on the Google Play Store. It's called "Memverse Mobile".
 
 ## Screenshots
 ![Rating a review](/screenshots/Review_Rate.png)
