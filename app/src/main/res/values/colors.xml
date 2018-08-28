@@ -6,6 +6,7 @@
 
     <color name="colorForeground">#f7f7f7</color>
     <color name="colorBackground">#bfbebe</color>
+    <color name="colorBackgroundDark">#ff000000</color>
 
     <color name="colorSubheading">#373737</color>
     <color name="colorSubheadingText">#7cc233</color>
@@ -22,4 +23,6 @@
     <color name="colorCorrectFeedbackBackground">#373737</color>
 
     <color name="colorReference">#000000</color>
+    <color name="colorPrimaryTextLight">#010101</color>
+    <color name="colorSecondaryTextLight">#444444</color>
 </resources>

@@ -61,6 +61,63 @@
 
         </LinearLayout>
 
+        <LinearLayout
+            android:id="@+id/review_rateBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="4dp"
+            android:layout_marginLeft="32dp"
+            android:layout_marginRight="32dp"
+            android:layout_marginTop="4dp"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <Button
+                android:id="@+id/review_rate1"
+                android:layout_width="0dp"
+                android:layout_height="35dp"
+                android:layout_marginRight="4dp"
+                android:layout_weight="1"
+                android:padding="3dp"
+                android:text="1" />
+            <Button
+                android:id="@+id/review_rate2"
+                android:layout_width="0dp"
+                android:layout_height="35dp"
+                android:layout_marginLeft="4dp"
+                android:layout_marginRight="4dp"
+                android:layout_weight="1"
+                android:padding="3dp"
+                android:text="2" />
+            <Button
+                android:id="@+id/review_rate3"
+                android:layout_width="0dp"
+                android:layout_height="35dp"
+                android:layout_marginLeft="4dp"
+                android:layout_marginRight="4dp"
+                android:layout_weight="1"
+                android:padding="3dp"
+                android:text="3" />
+            <Button
+                android:id="@+id/review_rate4"
+                android:layout_width="0dp"
+                android:layout_height="35dp"
+                android:layout_marginLeft="4dp"
+                android:layout_marginRight="4dp"
+                android:layout_weight="1"
+                android:padding="3dp"
+                android:text="4" />
+            <Button
+                android:id="@+id/review_rate5"
+                android:layout_width="0dp"
+                android:layout_height="35dp"
+                android:layout_marginLeft="4dp"
+                android:layout_weight="1"
+                android:padding="3dp"
+                android:text="5" />
+
+        </LinearLayout>
+
         <ScrollView
             android:layout_width="match_parent"
             android:layout_height="0dp"
@@ -78,37 +135,47 @@
                 android:padding="10dp">
 
                 <TextView
-                    android:id="@+id/review_prevVerseFeedbackView"
+                    android:id="@+id/review_instructions"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:paddingTop="5dp"
                     android:paddingBottom="5dp"
                     android:paddingLeft="10dp"
                     android:paddingRight="10dp"
+                    android:paddingTop="5dp"
+                    android:text="@string/review_instructions" />
+
+                <TextView
+                    android:id="@+id/review_prevVerseFeedbackView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingBottom="5dp"
+                    android:paddingLeft="10dp"
+                    android:paddingRight="10dp"
+                    android:paddingTop="5dp"
                     android:visibility="gone" />
 
                 <TextView
                     android:id="@+id/review_verseFeedbackView"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:paddingTop="5dp"
                     android:paddingBottom="5dp"
                     android:paddingLeft="10dp"
                     android:paddingRight="10dp"
+                    android:paddingTop="5dp"
                     android:visibility="gone" />
 
                 <TextView
                     android:id="@+id/review_correctFeedbackView"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="10dp"
                     android:layout_marginLeft="10dp"
+                    android:layout_marginStart="10dp"
+                    android:background="@color/colorCorrectFeedbackBackground"
                     android:paddingBottom="3dp"
                     android:paddingLeft="5dp"
                     android:paddingRight="5dp"
                     android:paddingTop="3dp"
                     android:text="@string/review_feedback_correct"
-                    android:background="@color/colorCorrectFeedbackBackground"
                     android:textColor="@color/colorCorrectFeedbackText"
                     android:visibility="gone" />
 
@@ -116,12 +183,12 @@
                     android:id="@+id/review_verseInput"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:paddingTop="5dp"
+                    android:hint="@string/review_verse_input_prompt"
+                    android:inputType="text"
                     android:paddingBottom="10dp"
                     android:paddingLeft="10dp"
                     android:paddingRight="10dp"
-                    android:hint="@string/review_verse_input_prompt"
-                    android:inputType="text" />
+                    android:paddingTop="5dp" />
             </LinearLayout>
 
         </ScrollView>

@@ -130,7 +130,7 @@ class MemverseWebInterface {
      * is used by getMemoryVerses(String, MemverseCallback, MemverseCallback) above.)
      * @param sort_order the order in which to sort the verses
      * @param success_callback the callback to which to pass the user's memory verses
-     * @param error_callback the callback to which to pass the error type if there is an error.
+     * @param error_callback the callback to which to pass the error type if there is an error
      * @param prev_verses a JSONArray of all the memory verses that have been retrieved in previous
      *                    iterations
      * @param page_num the page number for the current iteration (each page contains 100 verses max)
@@ -170,6 +170,159 @@ class MemverseWebInterface {
                     // The response was not correctly formatted, possibly due to an
                     // authentication error
                     error_callback.call("response error");
+                }
+            }
+        }, error_callback);
+    }
+
+    /**
+     * Attempt to retrieve a verse from the Bible.
+     * @param book the full name of the book of the Bible containing the verse (lowercase or
+     *             capitalized)
+     * @param chap the chapter containing the verse
+     * @param verse the verse number of the verse
+     * @param success_callback the callback to which to pass the verses if it successfully retrieved
+     * @param error_callback the callback to which to pass the error type if there is an error
+     */
+    public void getVerse(String book, String chap, String verse, String translation,
+                         final MemverseCallback<JSONObject> success_callback,
+                         final MemverseCallback<String> error_callback) {
+        // These are the parameters that will be passed to the API
+        Map<String, String> params = new HashMap<>();
+        params.put("tl", translation);
+        params.put("bk", book);
+        params.put("ch", chap);
+        params.put("vs", verse);
+
+        // Attempt to retrieve the verse
+        api_call("1/verses/lookup", params, "GET", new MemverseCallback<JSONObject>() {
+            @Override
+            public void call(JSONObject response) {
+                try {
+                    success_callback.call(response.getJSONObject("response"));
+                } catch (JSONException e) {
+                    // The response was not correctly formatted
+                    error_callback.call("response error");
+                }
+            }
+        }, error_callback);
+    }
+
+    /**
+     * Attempt to retrieve all the verses from a chapter of the Bible.
+     * @param book the full name of the book of the Bible containing the chapter (lowercase or
+     *             capitalized)
+     * @param chap the number of the chapter to retrieve
+     * @param translation the three-letter abbreviation of the name of the translation to use
+     * @param success_callback the callback to which to pass the verses upon success
+     * @param error_callback the callback to which to pass the error type if there is an error
+     */
+    void getChapter(final String book, final String chap, final String translation,
+                    final MemverseCallback<JSONArray> success_callback,
+                    final MemverseCallback<String> error_callback) {
+        // Since the Memverse API only returns a maximum of 15 verses from a chapter at a time, call
+        // the recursive version of getChapter starting with the first 15 verses (page_num=1)
+        getChapter(book, chap, translation, success_callback, error_callback, new JSONArray(), 1);
+    }
+
+    /**
+     * Recursively retrieve all the verses from a chapter of the Bible.
+     * @param book the full name of the book of the Bible containing the chapter (lowercase or
+     *             capitalized)
+     * @param chap the number of the chapter to retrieve
+     * @param translation the three-letter abbreviation of the name of the translation to use
+     * @param success_callback the callback to which to pass the verses upon success
+     * @param error_callback the callback to which to pass the error type if there is an error
+     * @param prev_verses verses previously retrieved by earlier recursive calls of this function
+     * @param page_num the page number (there are fifteen verses per page; start with page 1 and the
+     *                 function will recursively retrieve all subsequent pages)
+     */
+    private void getChapter(final String book, final String chap, final String translation,
+                            final MemverseCallback<JSONArray> success_callback,
+                            final MemverseCallback<String> error_callback,
+                            final JSONArray prev_verses, final Integer page_num) {
+        // These are the parameters that will be passed to the API
+        Map<String, String> params = new HashMap<>();
+        params.put("tl", translation);
+        params.put("bk", book);
+        params.put("ch", chap);
+        params.put("page", page_num.toString());
+
+        // Attempt to retrieve verses
+        api_call("1/verses/chapter", params, "GET", new MemverseCallback<JSONObject>() {
+            @Override
+            public void call(JSONObject response) {
+                try {
+                    JSONArray new_verses = response.getJSONArray("response");
+                    // Add newly retrieved verses to the list of previously retrieved verses
+                    for (int i = 0; i < new_verses.length(); i++) {
+                        prev_verses.put(new_verses.get(i));
+                    }
+                    // There may still be more pages of verses to retrieve
+                    JSONObject pagination=response.getJSONObject("pagination");
+                    if (pagination.getInt("current")<pagination.getInt("pages")) {
+                        getChapter(book, chap, translation, success_callback, error_callback,
+                                prev_verses, page_num+1);
+                    } else {
+                        // All the verses have been retrieved and added to the prev_verses array.
+                        // Send them to the callback
+                        success_callback.call(prev_verses);
+                    }
+                } catch (JSONException e) {
+                    // The response was not correctly formatted, possibly due to an
+                    // authentication error
+                    error_callback.call("response error");
+                }
+            }
+        }, error_callback);
+    }
+
+    /**
+     * Attempt to add a new memory verse to the current user's list of verses to review.
+     * @param verse_id the id number of the verse (see Memverse API)
+     * @param success_callback the callback to call if the addition is successful.
+     * @param error_callback the callback to which to pass the error type if there is an error
+     */
+    public void addVerse(String verse_id, final MemverseCallback<JSONObject> success_callback,
+                         final MemverseCallback<String> error_callback) {
+        // These are the parameters that will be passed to the API
+        Map<String, String> params = new HashMap<>();
+        params.put("id", verse_id);
+        // Attempt to add the verse
+        api_call("1/memverses", params, "POST", new MemverseCallback<JSONObject>() {
+            @Override
+            public void call(JSONObject response) {
+                try {
+                    success_callback.call(response.getJSONObject("response"));
+                } catch (JSONException e) {
+                    // The response was not correctly formatted (maybe the verse was already added,
+                    // or maybe the verse id was incorrect)
+                    error_callback.call("response error");
+                }
+            }
+        }, error_callback);
+    }
+
+    /**
+     * Attempt to delete a memory verse from the current user's list of verses to review.
+     * @param verse_id the id number of the verse (see Memverse API, must be the id associated with
+     *                 the verse in the user's list of memory verses)
+     * @param success_callback the callback to call if the deletion is successful.
+     * @param error_callback the callback to which to pass the error type if there is an error
+     */
+    public void deleteVerse(String verse_id, final MemverseCallback<String> success_callback,
+                         final MemverseCallback<String> error_callback) {
+        // Attempt to add the verse
+        api_call("1/memverses/"+verse_id, new HashMap<String, String>(), "DELETE",
+                new MemverseCallback<JSONObject>() {
+            @Override
+            public void call(JSONObject response) {
+                try {
+                    response.getJSONObject("error");
+                    //Some kind of error occurred
+                    error_callback.call("response error");
+                } catch (JSONException e) {
+                    success_callback.call("Success");
                 }
             }
         }, error_callback);
@@ -379,6 +532,11 @@ class MemverseWebInterface {
 
                 } catch (JSONException e) {
                     // The response string could not be converted to a JSONObject
+                    if(method.toUpperCase().equals("DELETE")) {
+                        //If the DELETE method was used, there should be no response. Return an
+                        // empty JSONObject
+                        return new JSONObject();
+                    }
                     error_type="response error";
                 } catch (ProtocolException e) {
                     // Something went wrong with setRequestMethod
